@@ -293,12 +293,12 @@ workflows:
   deploy:
     jobs:
       - deploy: *release-tags
-      - deploy-snapshot
+      - deploy-snapshot:
           filters:
             branches:
               only:
                 - develop
-      - deploy-amazon
+      - deploy-amazon:
           filters:
             branches:
               only:
