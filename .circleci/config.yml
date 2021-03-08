@@ -157,6 +157,31 @@ jobs:
             fi
       - android-wordpress-orb/save-gradle-cache
 
+
+  deploy-amazon:
+    executor: android-executor
+    steps:
+      - checkout
+      - restore_cache:
+          key: 1-gems-{{ checksum "Gemfile.lock" }}
+      - run: bundle check || bundle install --path vendor/bundle
+      - save_cache:
+          key: 1-gems-{{ checksum "Gemfile.lock" }}
+          paths:
+            - vendor/bundle
+      - android-wordpress-orb/restore-gradle-cache
+      - prepare-signing-key
+      - download-amazon-dependency
+      - run:
+          name: Deployment
+          command: |
+            if [ "$CIRCLE_JDK_VERSION" != "oraclejdk8" ]; then
+              echo "Skipping snapshot deployment: wrong JDK. Expected '$JDK' but was '$CIRCLE_JDK_VERSION'."
+            else
+              bundle exec fastlane android deploy_amazon
+            fi
+      - android-wordpress-orb/save-gradle-cache
+
   assemble-sample-app:
     executor: android-executor
     steps:
@@ -268,10 +293,14 @@ workflows:
   deploy:
     jobs:
       - deploy: *release-tags
-#      TODO: change back
       - deploy-snapshot
-#          filters:
-#            branches:
-#              only:
-#                - develop
+          filters:
+            branches:
+              only:
+                - develop
+      - deploy-amazon
+          filters:
+            branches:
+              only:
+                - amazon-release
       - docs-deploy: *release-tags
